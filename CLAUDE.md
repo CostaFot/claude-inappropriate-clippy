@@ -5,8 +5,9 @@ band above the prompt (`AbovePrompt`) and reacts to tool calls, prompts and turn
 Omarchy bar version is `~/Work/omarchy-inappropriate-clippy`; its `quotes.json` and
 sprite atlas are the source of the lines and frames here.
 
-Local only until Costa says otherwise. Creating the GitHub repo, pushing, and
-publishing to a marketplace or the Claude plugin directory all wait for his go.
+Public at github.com/CostaFot/claude-inappropriate-clippy, which is also its marketplace:
+a push to `main` reaches everyone who installed it, so ask before pushing. Tags,
+releases and a Claude plugin directory submission wait for his go too.
 
 ## Layout
 
