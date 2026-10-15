@@ -8,7 +8,7 @@ import type { Reaction } from './rules'
 import { spriteSvg, TOMBSTONE } from './sprite'
 
 
-const VERSION = '0.1.0'
+const VERSION = '0.1.1'
 const HAIKU = 'claude-haiku-5-5'
 const LEADERBOARD = 'https://graveyard.costafotiadis.com'
 const ANONYMOUS = 'anonymous-clippy-abuser'
@@ -58,6 +58,8 @@ const s = {
   isLbBusy: false,
   // The pending step of a death (the stone going up, or him coming back), so a revive can cancel it.
   deathTimer: null as { cancel: () => void } | null,
+  // A Linux sound player's path, found at session start; null where there is none.
+  player: null as string | null,
 }
 
 const opts = { clean: false, isAiOn: true, handle: ANONYMOUS as string | null }
@@ -165,6 +167,26 @@ async function flushLeaderboard($: EngineInterface) {
   }
 }
 
+// The engine's $.audio.play has a player only on macOS (afplay) and skips
+// silently elsewhere, so on Linux the wav goes to pw-play, paplay or aplay.
+async function findPlayer($: EngineInterface) {
+  try {
+    const found = await $.process.run(['sh', '-c', 'command -v pw-play || command -v paplay || command -v aplay'])
+    return found.exitCode === 0 && found.stdout.trim() !== '' ? found.stdout.trim() : null
+  } catch {
+    return null
+  }
+}
+
+async function playSound($: EngineInterface, name: string) {
+  try {
+    if (s.player !== null) await $.process.run([s.player, `${$.plugin.root}/assets/sounds/${name}`], { timeoutMs: 10_000 })
+    else await $.audio.play({ asset: `assets/sounds/${name}` })
+  } catch {
+    // No sound is not worth an error.
+  }
+}
+
 async function respawn($: EngineInterface) {
   s.deathTimer = null
   await update($, grave, () => null)
@@ -197,7 +219,7 @@ async function kill($: EngineInterface, key: 'lastWords' | 'knockedOut') {
   await $.store.set('kills', s.kills)
   const line = book(BOOK[key])
   await say($, fill(line.text), 'GoodBye')
-  void $.audio.play({ asset: 'assets/sounds/fall-cartoon.wav' }).catch(() => {})
+  void playSound($, 'fall-cartoon.wav')
   const until = (await $.clock.now()) + GOODBYE_MS + DEAD_MS
   s.deathTimer = $.clock.after(GOODBYE_MS, () => {
     s.isDying = false
@@ -217,14 +239,14 @@ async function slap($: EngineInterface) {
     return kill($, 'knockedOut')
   }
   if (s.slapTimes.length > 1 && Math.random() < DODGE) {
-    void $.audio.play({ asset: 'assets/sounds/dodge-whoosh.wav' }).catch(() => {})
+    void playSound($, 'dodge-whoosh.wav')
     const line = book(BOOK.dodged)
     return say($, fill(line.text), line.anim ?? 'GetAttention')
   }
   s.slaps += 1
   s.lbSlaps += 1
   await $.store.set('slaps', s.slaps)
-  void $.audio.play({ asset: pick(['assets/sounds/slap-crack.wav', 'assets/sounds/slap-punch.wav']) }).catch(() => {})
+  void playSound($, pick(['slap-crack.wav', 'slap-punch.wav']))
   const line = book(BOOK.slapped)
   await say($, fill(line.text), line.anim ?? 'Alert')
 }
@@ -271,6 +293,7 @@ export const register: Register = (on, options) => {
     const lastSeen = Number((await $.store.get('lastSeen')) ?? 0) || 0
     await $.store.set('lastSeen', now)
     s.nextIdleAt = now + between(2, 5) * 60_000
+    s.player = await findPlayer($)
 
     await $.command.register({
       name: 'clippy',

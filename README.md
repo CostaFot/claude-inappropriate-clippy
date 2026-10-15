@@ -50,6 +50,7 @@ In `/config`, under the plugin:
 ## Limitations
 
 - The animated sprite draws in the desktop app. A terminal gets 📎 and the text.
+- Slaps, dodges and deaths have sound: `pw-play`, `paplay` or `aplay` on Linux, `afplay` on macOS.
 - AI lines run on your own Claude usage, one Haiku call every 30 seconds at most.
 - The leaderboard gets a handle and two counts (slaps, kills), nothing else.
 - Mods are early access in Claude Code. Built against 2.1.295.
