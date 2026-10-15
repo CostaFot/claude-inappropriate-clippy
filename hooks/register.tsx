@@ -8,7 +8,7 @@ import type { Reaction } from './rules'
 import { spriteSvg, TOMBSTONE } from './sprite'
 
 
-const VERSION = '0.1.2'
+const VERSION = '0.2.0'
 const HAIKU = 'claude-haiku-5-5'
 const LEADERBOARD = 'https://graveyard.costafotiadis.com'
 const ANONYMOUS = 'anonymous-clippy-abuser'
@@ -21,6 +21,8 @@ const KO_SLAPS = 10 // this many slaps inside KO_WINDOW_MS knocks him out
 const KO_WINDOW_MS = 6_000
 const DODGE = 0.08
 const LONG_TURN_MS = 5 * 60_000
+// Every open session refreshes lastSeen each minute, so a shorter gap is only another session.
+const AWAY_MS = 30 * 60_000
 
 const said = atom({ plugin: 'inappropriate-clippy', key: 'said' } as const, null)
 const grave = atom({ plugin: 'inappropriate-clippy', key: 'grave' } as const, null)
@@ -81,6 +83,12 @@ async function say($: EngineInterface, text: string, anim: string) {
   await update($, said, () => ({ text, anim, id: now }))
 }
 
+// He lives in the desktop app. A session no desktop draws (a terminal, -p) gets no
+// lines and no Haiku calls nobody would see.
+async function isOnDesktop($: EngineInterface) {
+  return (await $.session.surfaces()).includes('desktop')
+}
+
 async function isDead($: EngineInterface) {
   return s.isDying || (await read($, grave)) !== null
 }
@@ -88,7 +96,7 @@ async function isDead($: EngineInterface) {
 // Something worth a jab happened. Haiku gets first go when it is on and not
 // called too recently; otherwise a line from the reaction's own book.
 async function react($: EngineInterface, reaction: Reaction | undefined) {
-  if (reaction === undefined || (await isDead($)) || (await read($, isHidden))) return
+  if (reaction === undefined || !(await isOnDesktop($)) || (await isDead($)) || (await read($, isHidden))) return
   const now = await $.clock.now()
   if (now - s.lastSpokeAt < QUIET_MS) return
   if (opts.isAiOn && !s.isAiBusy && now - s.lastAiAt >= AI_GAP_MS) {
@@ -268,7 +276,7 @@ async function tick($: EngineInterface) {
   }
   if (now >= s.nextIdleAt) {
     s.nextIdleAt = now + between(4, 10) * 60_000
-    if (!(await isDead($)) && !(await read($, isHidden)) && now - s.lastSpokeAt > 60_000) {
+    if ((await isOnDesktop($)) && !(await isDead($)) && !(await read($, isHidden)) && now - s.lastSpokeAt > 60_000) {
       const line = book(BOOK.quotes)
       await say($, fill(line.text), line.anim ?? 'Explain')
     }
@@ -307,7 +315,7 @@ export const register: Register = (on, options) => {
     } else {
       if (stone) await $.store.delete('grave')
       if ((await read($, said)) === null) {
-        const line = lastSeen > 0 ? book(BOOK.welcomeBack) : book(BOOK.quotes)
+        const line = lastSeen > 0 && now - lastSeen >= AWAY_MS ? book(BOOK.welcomeBack) : book(BOOK.quotes)
         await say($, fill(line.text, { away: duration(now - lastSeen) }), line.anim ?? 'Wave')
       }
     }
@@ -367,16 +375,12 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey || (await read($, isHidden))) return next(e)
+    if (e.surface !== 'desktop' || e.props.hasSurvey || (await read($, isHidden))) return next(e)
     const stone = await read($, grave)
     const line = await read($, said)
     if (stone === null && line === null) return next(e)
 
-    const els = $.ui.resolve(e)
-    const { Box, Button, Text } = els
-    const Svg = 'Svg' in els ? els.Svg : undefined
-    // Room around him where there are pixels to spare; a terminal keeps its rows.
-    const pad = e.surface === 'desktop'
+    const { Box, Button, Svg, Text } = $.ui.resolve(e)
     const hide = () => {
       void update($, isHidden, () => true)
       $.ui.toast('Clippy is hiding. /clippy brings him back.')
@@ -385,9 +389,9 @@ export const register: Register = (on, options) => {
     if (stone !== null) {
       const left = duration(stone.until - (await $.clock.now()))
       return (
-        <Box flexDirection="row" gap={pad ? 2 : 1} alignItems="center" paddingX={pad ? 2 : 0} paddingY={pad ? 1 : 0}>
-          {Svg ? <Svg source={TOMBSTONE} alt="Clippy's tombstone" width={62} height={47} /> : <Text>🪦</Text>}
-          <Box flexDirection="column" flexShrink={1} gap={pad ? 1 : 0}>
+        <Box flexDirection="row" gap={2} alignItems="center" paddingX={2} paddingY={1}>
+          <Svg source={TOMBSTONE} alt="Clippy's tombstone" width={62} height={47} />
+          <Box flexDirection="column" flexShrink={1} gap={1}>
             <Text italic dimColor wrap="wrap">
               {stone.epitaph ?? `Here lies Clippy. Back in ${left}.`}
             </Text>
@@ -402,13 +406,9 @@ export const register: Register = (on, options) => {
 
     if (line === null) return next(e)
     return (
-      <Box flexDirection="row" gap={pad ? 2 : 1} alignItems="center" paddingX={pad ? 2 : 0} paddingY={pad ? 1 : 0}>
-        {Svg ? (
-          <Svg source={spriteSvg(line.anim, line.id)} alt="Clippy" width={93} height={70} />
-        ) : (
-          <Text>📎</Text>
-        )}
-        <Box flexDirection="column" flexShrink={1} gap={pad ? 1 : 0}>
+      <Box flexDirection="row" gap={2} alignItems="center" paddingX={2} paddingY={1}>
+        <Svg source={spriteSvg(line.anim, line.id)} alt="Clippy" width={93} height={70} />
+        <Box flexDirection="column" flexShrink={1} gap={1}>
           <Text wrap="wrap">{line.text}</Text>
           <Box flexDirection="row" gap={1}>
             <Button key="slap" label="Slap" hotkey="s" onPress={() => void slap($)} />

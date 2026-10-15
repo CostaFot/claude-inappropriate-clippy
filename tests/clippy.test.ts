@@ -2,9 +2,9 @@ import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
 // What a session answers beneath the plugin: a store the test can read back,
-// a start, a command list, a speaker, a toast, and an engine that draws
-// nothing of its own above the prompt.
-function host(on: On, stored: Record<string, unknown> = {}) {
+// a start, the surfaces it draws on, a command list, a speaker, a toast, and an
+// engine that draws nothing of its own above the prompt.
+function host(on: On, stored: Record<string, unknown> = {}, surfaces: string[] = ['desktop']) {
   const store = new Map<string, unknown>(Object.entries(stored))
   on('store.get', ($, e) => ({ value: store.get(e.key) }))
   on('store.set', ($, e) => {
@@ -16,6 +16,7 @@ function host(on: On, stored: Record<string, unknown> = {}) {
     return { value: undefined }
   })
   on('session.start', () => ({ cwd: '/tmp' }))
+  on('session.surfaces', () => ({ value: surfaces }) as never)
   on('command.register', () => ({ value: { command: 'clippy' } }))
   on('audio.play', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
@@ -34,19 +35,34 @@ const BAND = {
   props: { hasSurvey: false, isWorking: false, maxRows: 12, bodyColumns: 100, scroll: { offset: 0, bodyRows: 12 }, view: {} },
 } as const
 
-test('he greets you, draws on every surface, and keeps his buttons', OPTIONS, async ($, on) => {
+test('he greets you on the desktop, with his buttons, and stays out of the terminal', OPTIONS, async ($, on) => {
   mock.clock(on, { now: 1_800_000_000_000 })
-  const store = host(on)
+  host(on)
   await $.session.start({ cwd: '/tmp', surface: 'desktop', isInteractive: true })
 
-  for (const surface of ['terminal', 'desktop'] as const) {
-    const ui = await $.ui.mount({ ...BAND, surface })
-    expect(await ui.find({ key: 'slap' })).toBeDefined()
-    expect(await ui.find({ key: 'kill' })).toBeDefined()
-    expect(await ui.find({ key: 'hide' })).toBeDefined()
-    expect((await ui.findAll({ type: 'Svg' })).length).toBe(surface === 'desktop' ? 1 : 0)
-    await ui.unmount()
-  }
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'slap' })).toBeDefined()
+  expect(await ui.find({ key: 'kill' })).toBeDefined()
+  expect(await ui.find({ key: 'hide' })).toBeDefined()
+  expect((await ui.findAll({ type: 'Svg' })).length).toBe(1)
+  await ui.unmount()
+
+  ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ key: 'slap' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a terminal-only session gets no reactions', OPTIONS, async ($, on) => {
+  const clock = mock.clock(on, { now: 1_800_000_000_000 })
+  host(on, {}, ['terminal'])
+  on('tool.call', () => ({ result: { stdout: '', stderr: '', interrupted: false } }) as never)
+  await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+  await clock.advance(20_000)
+
+  await $.tool.call({ tool: 'Bash', command: 'rm -rf build' })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /-rf/ })).toBeUndefined()
+  await ui.unmount()
 })
 
 test('rm -rf gets a line and the call goes through untouched', OPTIONS, async ($, on) => {
@@ -136,4 +152,15 @@ test('/clippy revive brings him back early, once', OPTIONS, async ($, on) => {
   await ui.unmount()
 
   expect(await $.command.run({ command: 'clippy', args: 'revive' })).toEqual(expect.objectContaining({ text: "Clippy isn't dead." }))
+})
+
+test('a session started a minute after another gets no welcome back', OPTIONS, async ($, on) => {
+  const now = 1_800_000_000_000
+  mock.clock(on, { now })
+  host(on, { lastSeen: now - 60_000 })
+  await $.session.start({ cwd: '/tmp', surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /1 minute/ })).toBeUndefined()
+  await ui.unmount()
 })

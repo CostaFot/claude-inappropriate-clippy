@@ -41,10 +41,14 @@ name, so only one can be installed at a time.
 - The engine reads no module file over 1 MiB, so each animation is its own file.
 - Any function handed `$` must be declared at the module's top level, or validate
   refuses it. Module state lives in `s` and `opts` for that reason.
+- Desktop only: the render hook passes on every other surface, and reactions and idle
+  lines need `desktop` in `$.session.surfaces()`. The terminal's element table carries
+  an `Svg` at run time that it cannot draw, so never branch on `'Svg' in els`.
 - On the desktop, an `Svg` with `isInteractive` draws nothing for an embedded
   `data:` PNG. Plain image mode draws it, and SMIL still plays there.
 - Tests run with nothing beneath the plugin: `host()` in the test file answers
-  `session.start`, `command.register`, `audio.play`, `ui.toast`, `ui.render` and the store.
+  `session.start`, `session.surfaces`, `command.register`, `audio.play`, `ui.toast`,
+  `ui.render` and the store.
 - Hooks only watch tool calls: they pass the call on untouched and return its result.
 - Respawn and revive both go through `s.deathTimer`, so a revive cancels the pending respawn.
 - `claude plugin validate` warns that `CLAUDE.md` at the plugin root is not loaded as

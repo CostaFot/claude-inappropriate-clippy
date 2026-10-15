@@ -1,7 +1,7 @@
 # Inappropriate Clippy for Claude Code
 
 Clippy in the band above your Claude Code prompt, heckling you and your agent. A
-[mod](https://claude.com/blog/claude-code-mods) for the CLI and the desktop app.
+[mod](https://claude.com/blog/claude-code-mods) for Claude Code's desktop app.
 Same paperclip as the [Omarchy one](https://github.com/CostaFot/omarchy-inappropriate-clippy),
 same lines, same graveyard.
 
@@ -13,7 +13,7 @@ In a terminal session:
 /plugin install inappropriate-clippy --marketplace CostaFot/claude-inappropriate-clippy
 ```
 
-Installed at the user scope, he also shows up in the desktop app's Code tab.
+Installed at the user scope, he shows up in the desktop app's Code tab.
 
 ## What he does
 
@@ -49,7 +49,7 @@ In `/config`, under the plugin:
 
 ## Limitations
 
-- The animated sprite draws in the desktop app. A terminal gets 📎 and the text.
+- Desktop app only. In a terminal session he draws nothing and makes no AI calls.
 - Slaps, dodges and deaths have sound: `pw-play`, `paplay` or `aplay` on Linux, `afplay` on macOS.
 - AI lines run on your own Claude usage, one Haiku call every 30 seconds at most.
 - The leaderboard gets a handle and two counts (slaps, kills), nothing else.
