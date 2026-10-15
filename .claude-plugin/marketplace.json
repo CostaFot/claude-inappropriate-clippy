@@ -1,0 +1,13 @@
+{
+  "name": "inappropriate-clippy",
+  "description": "Inappropriate Clippy for Claude Code.",
+  "owner": {
+    "name": "Costa Fotiadis"
+  },
+  "plugins": [
+    {
+      "name": "inappropriate-clippy",
+      "source": "./"
+    }
+  ]
+}

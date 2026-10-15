@@ -1,0 +1,29 @@
+{
+  "name": "inappropriate-clippy",
+  "version": "0.1.0",
+  "description": "Clippy lives above your prompt and heckles you and your agent. Slap him. Kill him. He comes back.",
+  "author": { "name": "Costa Fotiadis" },
+  "homepage": "https://github.com/CostaFot/claude-inappropriate-clippy",
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "leaderboard": {
+      "type": "string",
+      "title": "Leaderboard handle",
+      "description": "Your stone on graveyard.costafotiadis.com (a-z, 0-9, _ . -). Empty posts to the shared anonymous stone; off posts nothing.",
+      "default": ""
+    },
+    "clean": {
+      "type": "boolean",
+      "title": "Clean mode",
+      "description": "No swearing.",
+      "default": false
+    },
+    "ai": {
+      "type": "boolean",
+      "title": "AI lines",
+      "description": "Ask Haiku for a line about what just happened, on your own Claude usage. Off, he only speaks from the book.",
+      "default": true
+    }
+  }
+}
