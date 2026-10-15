@@ -8,7 +8,7 @@ import type { Reaction } from './rules'
 import { spriteSvg, TOMBSTONE } from './sprite'
 
 
-const VERSION = '0.1.1'
+const VERSION = '0.1.2'
 const HAIKU = 'claude-haiku-5-5'
 const LEADERBOARD = 'https://graveyard.costafotiadis.com'
 const ANONYMOUS = 'anonymous-clippy-abuser'
@@ -375,6 +375,8 @@ export const register: Register = (on, options) => {
     const els = $.ui.resolve(e)
     const { Box, Button, Text } = els
     const Svg = 'Svg' in els ? els.Svg : undefined
+    // Room around him where there are pixels to spare; a terminal keeps its rows.
+    const pad = e.surface === 'desktop'
     const hide = () => {
       void update($, isHidden, () => true)
       $.ui.toast('Clippy is hiding. /clippy brings him back.')
@@ -383,9 +385,9 @@ export const register: Register = (on, options) => {
     if (stone !== null) {
       const left = duration(stone.until - (await $.clock.now()))
       return (
-        <Box flexDirection="row" gap={1} alignItems="center">
+        <Box flexDirection="row" gap={pad ? 2 : 1} alignItems="center" paddingX={pad ? 2 : 0} paddingY={pad ? 1 : 0}>
           {Svg ? <Svg source={TOMBSTONE} alt="Clippy's tombstone" width={62} height={47} /> : <Text>🪦</Text>}
-          <Box flexDirection="column" flexShrink={1}>
+          <Box flexDirection="column" flexShrink={1} gap={pad ? 1 : 0}>
             <Text italic dimColor wrap="wrap">
               {stone.epitaph ?? `Here lies Clippy. Back in ${left}.`}
             </Text>
@@ -400,13 +402,13 @@ export const register: Register = (on, options) => {
 
     if (line === null) return next(e)
     return (
-      <Box flexDirection="row" gap={1} alignItems="center">
+      <Box flexDirection="row" gap={pad ? 2 : 1} alignItems="center" paddingX={pad ? 2 : 0} paddingY={pad ? 1 : 0}>
         {Svg ? (
           <Svg source={spriteSvg(line.anim, line.id)} alt="Clippy" width={93} height={70} />
         ) : (
           <Text>📎</Text>
         )}
-        <Box flexDirection="column" flexShrink={1}>
+        <Box flexDirection="column" flexShrink={1} gap={pad ? 1 : 0}>
           <Text wrap="wrap">{line.text}</Text>
           <Box flexDirection="row" gap={1}>
             <Button key="slap" label="Slap" hotkey="s" onPress={() => void slap($)} />

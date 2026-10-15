@@ -1,6 +1,6 @@
 {
   "name": "inappropriate-clippy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Clippy lives above your prompt and heckles you and your agent. Slap him. Kill him. He comes back.",
   "author": { "name": "Costa Fotiadis" },
   "homepage": "https://github.com/CostaFot/claude-inappropriate-clippy",
