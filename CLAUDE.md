@@ -29,8 +29,12 @@ node scripts/build-assets.mjs # regenerate the book and sprites
 `tsc -p .` type-checks against the types the engine lays in `.claude-plugin/types/`
 on load. TypeScript is not installed on this machine.
 
-To run it from a session: load the `plugin-authoring` skill and symlink this folder
-into that session's `~/.claude/dev-mods/<session>/`. Edits hot-reload when a turn ends.
+On this machine it is installed at user scope from this folder (`claude plugin
+marketplace add ~/Work/claude-inappropriate-clippy`, then `claude plugin install
+inappropriate-clippy@inappropriate-clippy`), so every session runs the working copy:
+edit, then `/reload-plugins`. To try the published version instead, uninstall and
+install from `CostaFot/claude-inappropriate-clippy`; both sources share the marketplace
+name, so only one can be installed at a time.
 
 ## Gotchas
 
