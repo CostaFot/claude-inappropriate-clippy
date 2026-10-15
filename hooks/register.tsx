@@ -8,7 +8,7 @@ import type { Reaction } from './rules'
 import { spriteSvg, TOMBSTONE } from './sprite'
 
 
-const VERSION = '0.2.0'
+const VERSION = '0.2.1'
 const HAIKU = 'claude-haiku-5-5'
 const LEADERBOARD = 'https://graveyard.costafotiadis.com'
 const ANONYMOUS = 'anonymous-clippy-abuser'
@@ -389,9 +389,9 @@ export const register: Register = (on, options) => {
     if (stone !== null) {
       const left = duration(stone.until - (await $.clock.now()))
       return (
-        <Box flexDirection="row" gap={2} alignItems="center" paddingX={2} paddingY={1}>
+        <Box flexDirection="row" gap={1} alignItems="center" paddingX={1}>
           <Svg source={TOMBSTONE} alt="Clippy's tombstone" width={62} height={47} />
-          <Box flexDirection="column" flexShrink={1} gap={1}>
+          <Box flexDirection="column" flexShrink={1}>
             <Text italic dimColor wrap="wrap">
               {stone.epitaph ?? `Here lies Clippy. Back in ${left}.`}
             </Text>
@@ -406,9 +406,9 @@ export const register: Register = (on, options) => {
 
     if (line === null) return next(e)
     return (
-      <Box flexDirection="row" gap={2} alignItems="center" paddingX={2} paddingY={1}>
-        <Svg source={spriteSvg(line.anim, line.id)} alt="Clippy" width={93} height={70} />
-        <Box flexDirection="column" flexShrink={1} gap={1}>
+      <Box flexDirection="row" gap={1} alignItems="center" paddingX={1}>
+        <Svg source={spriteSvg(line.anim, line.id)} alt="Clippy" width={62} height={47} />
+        <Box flexDirection="column" flexShrink={1}>
           <Text wrap="wrap">{line.text}</Text>
           <Box flexDirection="row" gap={1}>
             <Button key="slap" label="Slap" hotkey="s" onPress={() => void slap($)} />
